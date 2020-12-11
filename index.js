@@ -36,29 +36,22 @@ var transporter = nodemailer.createTransport({
 
 app.put("/reset-password", async(req, res)=>{
   try{
-    console.log("Inside rest-password api ");
     let client = await mongodb.connect(url);
     let db = client.db("url_db");
     let data = await db.collection("users").findOne({ email: req.body.email });
     let salt = await bcrypt.genSalt(8);
     if (data) {
-      console.log("Inside data part of rest-password api ");
       let randomStringData = {randomString : salt}
       await db.collection("users").findOneAndUpdate({email: req.body.email}, {$set :randomStringData})
       mailOptions.to = req.body.email;
       let resetURL = process.env.resetUrl;
-      console.log("resetUrl is: "+ resetURL);
       resetURL = resetURL+"?id="+data._id+"&rs="+salt;
-      
-      console.log("final reswturl is: "+ resetURL);
-
       let sampleMail = '<p>Hi,</p>'
       + '<p>Please click on the link below to reset your Password</p>'
       + '<a target="_blank" href='+ resetURL +'>' +  resetURL + '</a>'
       + '<p>Regards,</p>';
 
       let resultMail = sampleMail;
-      console.log("resultMail is: "+ resultMail);
       mailOptions.html = resultMail;
       await transporter.sendMail(mailOptions)
       res.status(200).json({
@@ -107,18 +100,17 @@ app.post("/register", async (req, res) => {
       
       let data = await db.collection("users").findOne({ email: req.body.email });
       if (data) {
-        console.log("Inside data part true of register api");
         res.status(400).json({
           message: "User already exists",
         });
       } else {
-        // console.log("Inside else of data part true of register api");
+        
         let randomString = await bcrypt.genSalt(8);
         let salt = await bcrypt.genSalt(10);
         let hash = await bcrypt.hash(req.body.password, salt);
         req.body.password = hash;
         let reqData = req.body;
-        // console.log("reqDAta is: "+ reqData);
+        
         
         reqData["activateString"] = randomString;
         await db.collection("users").insertOne(reqData);
@@ -126,7 +118,7 @@ app.post("/register", async (req, res) => {
         mailOptions.to = req.body.email
         mailOptions.subject = "Activation mail"
         let activateURL = process.env.activateURL;
-        // console.log("activateURL is: "+ activateURL);
+        
         activateURL = activateURL+"?id="+data._id+"&ac="+randomString
         
         let activateMail = '<p>Hi,</p>'
@@ -135,8 +127,6 @@ app.post("/register", async (req, res) => {
                  + '<p>Regards,</p>'
 
 
-        
-        // console.log("result mail is: "+ activateMail);
         
         mailOptions.html = activateMail
         await transporter.sendMail(mailOptions);
@@ -235,8 +225,7 @@ app.post("/register", async (req, res) => {
       let db = client.db("url_db");
       let data = await db.collection("url_collection").findOne({ long_url : longURL });
       if(data){
-        let shortURL = "http://127.0.0.1:5500/frontend/index.html" + "?id=" + btoa(data._id)
-        console.log("shortened URL will be: " + shortURL);
+        let shortURL = process.env.baseURL + "?id=" + btoa(data._id)
         res.status(200).json({
           message : "URL is shortened",
           shortenedURL :  shortURL
